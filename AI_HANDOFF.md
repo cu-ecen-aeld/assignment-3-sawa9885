@@ -66,8 +66,39 @@ For each new assignment:
 13. Run the required local tests.
 14. Confirm GitHub Actions passes when required.
 15. Update `AI_ATTRIBUTION.md` before submission.
-16. Generate a shareable full-chat link for every material AI session.
+16. Generate a shareable full-chat link for every material AI session only
+    after the required interactive review, so the shared history includes both
+    the implementation work and the student's review.
 17. Never assist with quizzes, the midterm, or the final exam.
+
+## Interactive review gate
+
+Treat review as a soft gate before committing, tagging, or pushing materially
+AI-assisted assignment changes:
+
+1. Finish the assignment-scoped implementation and local validation first.
+2. Before committing, tagging, or pushing the implementation, teach the
+   student how the important code works in short, focused sections.
+3. End each teaching message with one nuanced question about the material just
+   explained. Ask the student to answer in their own words; do not rely only on
+   multiple-choice questions or a simple statement that they understand.
+4. Correct misconceptions precisely and continue until the student can explain
+   the main control flow, design choices, error handling, resource ownership,
+   and relevant security implications.
+5. Record the specific topics the student demonstrated in
+   `AI_ATTRIBUTION.md`; do not claim review or understanding without evidence
+   from the conversation.
+6. Generate or refresh the shareable chat link after the review is complete.
+   If sharing is unavailable, state that limitation and ask the student to
+   create and provide a full-thread link before submission.
+7. Only after the review, attribution, and required tests are complete should
+   the AI commit, tag, or push the materially assisted changes.
+
+This is a soft lock rather than an irreversible restriction. If the student
+explicitly instructs the AI to bypass it, explain what review or attribution
+step remains incomplete and obtain a clear confirmation before proceeding.
+Course policy, assignment deadlines, and direct instructor guidance remain
+higher authority.
 
 ## Attribution requirements
 
@@ -81,6 +112,9 @@ For each materially AI-assisted session, record:
 - What the student reviewed, changed, tested, and verified.
 - Any external code or sources and the portions they influenced.
 - Whether another student's assignment was used.
+
+The chat-history link should include the implementation, testing, explanation,
+and interactive review—not only the code-generation portion of the session.
 
 Do not claim that materially AI-generated code was entirely student-authored.
 Do not attribute untouched course starter code to AI.

@@ -89,16 +89,18 @@ developing this submission.
 ## Assignment 3 Part 1 - System Calls
 
 OpenAI Codex/ChatGPT was used as a collaborative programming assistant for
-Assignment 3 Part 1 on September 1, 2026.
+Assignment 3 Part 1 between September 1 and September 13, 2026.
 
 ### Full chat history
 
-https://chatgpt.com/s/cx_6a97673606308191b0daeb3978669704
+https://chatgpt.com/s/cx_6aa6e1bd41c0819199d6b38807b3e187
 
 ### AI-assisted files
 
 - `examples/systemcalls/systemcalls.c`
 - `finder-app/finder-test.sh`
+- `AI_HANDOFF.md`
+- `AGENTS.md`
 - `AI_ATTRIBUTION.md`
 
 ### Assistance provided
@@ -115,6 +117,12 @@ AI assistance was used to:
 - Remove the Assignment 2 native build commands from `finder-test.sh`.
 - Diagnose and replace a stale generated CMake build directory, then run the
   Assignment 3 unit tests and focused local verification.
+- Conduct an interactive review covering process control, wait status,
+  descriptor ownership and redirection, argument arrays, and shell-injection
+  behavior.
+- Add a reusable interactive-review gate to the repository guidance so future
+  materially AI-assisted assignment changes are reviewed before commit, tag,
+  and push.
 
 ### Course starter code
 
