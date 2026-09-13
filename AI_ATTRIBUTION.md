@@ -85,3 +85,64 @@ Sources consulted for requirements or operational guidance included:
 
 No other student's assignment was used, supplied to the AI, or referenced when
 developing this submission.
+
+## Assignment 3 Part 1 - System Calls
+
+OpenAI Codex/ChatGPT was used as a collaborative programming assistant for
+Assignment 3 Part 1 on September 1, 2026.
+
+### Full chat history
+
+https://chatgpt.com/s/cx_6a97673606308191b0daeb3978669704
+
+### AI-assisted files
+
+- `examples/systemcalls/systemcalls.c`
+- `finder-app/finder-test.sh`
+- `AI_ATTRIBUTION.md`
+
+### Assistance provided
+
+AI assistance was used to:
+
+- Merge the course-provided `assignment3-part-1` starter branch and initialize
+  its test submodules.
+- Implement `do_system()` by checking the status returned by `system()`.
+- Implement `do_exec()` using `fork()`, `execv()`, and `waitpid()`, including
+  child exit-status and interrupted-wait handling.
+- Implement `do_exec_redirect()` using `open()` and `dup2()` to redirect child
+  standard output, with file-descriptor, fork, exec, and wait error handling.
+- Remove the Assignment 2 native build commands from `finder-test.sh`.
+- Diagnose and replace a stale generated CMake build directory, then run the
+  Assignment 3 unit tests and focused local verification.
+
+### Course starter code
+
+The `examples/systemcalls` skeleton, test infrastructure, and other files
+introduced by the `assignment3-part-1` merge originated from the course starter
+repository. AI assistance filled the TODO sections in `systemcalls.c` and
+removed the previously AI-assisted Assignment 2 build step from
+`finder-test.sh`; untouched starter code is not represented as AI-generated.
+
+### Student review and verification
+
+The student reviewed the implementation interactively and demonstrated their
+understanding of `fork()`/`execv()` process behavior, encoded child exit status,
+interrupted `waitpid()` calls, variadic argument-array termination, `dup2()`
+output redirection, file-descriptor ownership after `fork()`, and the difference
+between direct `execv()` arguments and shell interpretation.
+
+During the AI-assisted session, `./unit-test.sh` passed all three Assignment 3
+tests with zero failures, `finder-app/finder-test.sh` returned `success`, and
+`systemcalls.c` compiled with `-std=c99 -Wall -Wextra -Werror`.
+
+### External code and sources
+
+No external implementation code and no other student's assignment were used.
+Requirements were taken from the Assignment 3 Part 1 instructions supplied by
+the student and the course-provided starter code and tests.
+
+### Other student assignments
+
+No other student's assignment was used, supplied to the AI, or referenced when
+developing this submission.

@@ -2,10 +2,6 @@
 # Tester script for assignment 1 and assignment 2
 # Author: Siddhant Jajoo
 
-# Remove previous build artifacts and build the native writer application
-make clean || exit 1
-make || exit 1
-
 set -e
 set -u
 
@@ -52,10 +48,6 @@ then
 		exit 1
 	fi
 fi
-#echo "Removing the old writer utility and compiling as a native application"
-#make clean
-#make
-
 for i in $( seq 1 $NUMFILES)
 do
 	./writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
