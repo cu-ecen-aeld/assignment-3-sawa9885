@@ -86,6 +86,97 @@ Sources consulted for requirements or operational guidance included:
 No other student's assignment was used, supplied to the AI, or referenced when
 developing this submission.
 
+## Assignment 3 Part 2 - Manual Kernel and Root Filesystem Build
+
+OpenAI Codex/ChatGPT was used as a collaborative programming assistant for
+Assignment 3 Part 2 on September 13, 2026.
+
+### Full chat history
+
+https://chatgpt.com/s/cx_6aa729d0dc088191940bb8183a26f240
+
+### AI-assisted files
+
+- `finder-app/manual-linux.sh`
+- `finder-app/finder-test.sh`
+- `finder-app/finder.sh`
+- `AI_ATTRIBUTION.md`
+
+### Assistance provided
+
+AI assistance was used to:
+
+- Merge the course-provided `assignment3-part-2` starter branch without
+  committing before the required interactive review.
+- Complete `manual-linux.sh` so it creates an absolute output directory,
+  downloads and cross-compiles Linux v5.15.163 and BusyBox 1.33.1, stages an
+  ARM64 root filesystem, installs the cross-toolchain runtime libraries and
+  device nodes, cross-compiles `writer`, copies the assignment files, and
+  creates `initramfs.cpio.gz`.
+- Add quoting, fail-fast behavior, output-directory creation checks, and an
+  explicit refusal to use `/` as the output directory before recursive
+  root-filesystem operations.
+- Change the target-side `finder.sh` interpreter from `/bin/bash` to the
+  BusyBox-provided `/bin/sh`.
+- Change `finder-test.sh` to read `conf/assignment.txt` from its target-side
+  layout.
+- Diagnose and correct the BusyBox executable path used for dependency
+  inspection.
+- Run syntax, formatting, unit, artifact, initramfs-content, and QEMU boot
+  validation.
+- Conduct an interactive review covering host versus target execution,
+  cross-compilation, kernel and root-filesystem roles, initramfs paths and
+  interpreters, device nodes, privileges and path safety, fail-fast error
+  handling, staged-file ownership, debugging boundaries, and the local versus
+  GitHub Actions validation workflow.
+
+### Course starter code
+
+The outline of `manual-linux.sh`, QEMU scripts, automated tests, and GitHub
+Actions full-test job originated from the course starter repository. AI
+assistance completed the TODO sections and made the assignment-scoped safety
+and compatibility changes described above. Untouched starter code is not
+represented as AI-generated.
+
+### Student review and verification
+
+The student explained in their own words:
+
+- Why the kernel build is cached while the user-specific root filesystem is
+  reconstructed, including the stale-kernel risk.
+- Why host-built x86-64 code cannot execute on the ARM64 target and why shell
+  scripts can work on both when a compatible interpreter exists.
+- How an incorrect shebang can produce a misleading “not found” failure.
+- Why unsafe or empty output paths can redirect privileged recursive commands
+  to unintended host locations.
+- How fail-fast behavior prevents stale artifacts and cascading errors from
+  obscuring the original failure.
+- How to localize failures using kernel, initramfs, writer, finder, and QEMU
+  log boundaries.
+- The complete flow from host-side cross-compilation through ARM64 QEMU boot,
+  creation of ten files, and finder result validation.
+- Why local QEMU success does not independently prove a clean GitHub Actions
+  checkout will pass.
+
+During the session, `./unit-test.sh` passed all three Assignment 3 tests.
+The course `24-assignment3` container built Linux, BusyBox, the root filesystem,
+and initramfs; QEMU booted the generated ARM64 artifacts and printed both
+`success` and `Completed with success!!`. The generated writer was verified as
+an ARM64 ELF executable, and the required files and device nodes were verified
+inside the initramfs. The student will manually confirm the GitHub Actions
+unit-test and full-test jobs after the reviewed commit and tag are pushed.
+
+### External code and sources
+
+No external implementation code and no other student's assignment were used.
+Requirements and implementation structure came from the Assignment 3 Part 2
+instructions and course-provided starter repository supplied for this work.
+
+### Other student assignments
+
+No other student's assignment was used, supplied to the AI, or referenced when
+developing this submission.
+
 ## Assignment 3 Part 1 - System Calls
 
 OpenAI Codex/ChatGPT was used as a collaborative programming assistant for
