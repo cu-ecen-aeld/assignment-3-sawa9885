@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # This file was fully generated with assistance from OpenAI Codex.
 # Full chat session:

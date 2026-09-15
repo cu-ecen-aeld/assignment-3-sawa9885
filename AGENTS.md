@@ -25,3 +25,15 @@ Before performing any work in this repository:
     before claiming completion.
 12. If course policy or permissible collaboration is unclear, stop and recommend
     asking the instructor.
+13. Apply an interactive review soft lock to materially AI-assisted assignment
+    work: do not commit, tag, or push it until the student has reviewed the
+    implementation and demonstrated understanding in their own words.
+14. Conduct that review in short teaching sections, ending each teaching
+    message with a nuanced question about the section just taught. Correct
+    misconceptions and cover control flow, design choices, error handling,
+    resource ownership, testing, and relevant security implications.
+15. Generate the shareable full-chat link after the review so it includes both
+    implementation and review. If task sharing is unavailable, ask the student
+    to create and provide the full-thread link before submission.
+16. The student may explicitly override the soft lock after being told which
+    review, attribution, or verification steps remain incomplete.

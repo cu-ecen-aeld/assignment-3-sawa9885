@@ -2,10 +2,6 @@
 # Tester script for assignment 1 and assignment 2
 # Author: Siddhant Jajoo
 
-# Remove previous build artifacts and build the native writer application
-make clean || exit 1
-make || exit 1
-
 set -e
 set -u
 
@@ -36,7 +32,7 @@ echo "Writing ${NUMFILES} files containing string ${WRITESTR} to ${WRITEDIR}"
 rm -rf "${WRITEDIR}"
 
 # create $WRITEDIR if not assignment1
-assignment=`cat ../conf/assignment.txt`
+assignment=$(cat conf/assignment.txt)
 
 if [ $assignment != 'assignment1' ]
 then
@@ -52,10 +48,6 @@ then
 		exit 1
 	fi
 fi
-#echo "Removing the old writer utility and compiling as a native application"
-#make clean
-#make
-
 for i in $( seq 1 $NUMFILES)
 do
 	./writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
