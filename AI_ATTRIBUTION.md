@@ -86,6 +86,81 @@ Sources consulted for requirements or operational guidance included:
 No other student's assignment was used, supplied to the AI, or referenced when
 developing this submission.
 
+## Assignment 4 Part 1 - Threading
+
+OpenAI Codex/ChatGPT was used as a collaborative programming assistant for
+Assignment 4 Part 1 on September 15-16, 2026.
+
+### Full chat history
+
+https://chatgpt.com/s/cx_6aab3fc81a988191921d350d1adeeef5
+
+### AI-assisted files
+
+- `examples/threading/threading.c`
+- `examples/threading/threading.h`
+- `AI_ATTRIBUTION.md`
+
+### Assistance provided
+
+AI assistance was used to:
+
+- Merge the course-provided `assignment4` starter branch without committing
+  before the required interactive review.
+- Extend `struct thread_data` with the mutex pointer and wait durations needed
+  by each worker.
+- Implement `start_thread_obtaining_mutex()` with argument validation, dynamic
+  allocation, per-thread state initialization, `pthread_create()`, and cleanup
+  when thread creation fails.
+- Implement the worker's wait, mutex lock, second wait, mutex unlock, completion
+  status, and returned result pointer.
+- Add millisecond sleeping with retry after signal interruption and ensure an
+  acquired mutex is released on later failures.
+- Run the course unit tests and a strict warning-enabled compilation check.
+- Conduct an interactive review covering thread control flow, allocation
+  ownership, mutex ownership, error cleanup, concurrency, mutex lifetime, and
+  deadlock prevention.
+
+### Course starter code
+
+The threading skeleton, Assignment 4 CMake and workflow changes, configuration,
+test infrastructure, and Unity threading tests originated from the course
+starter repository. AI assistance completed the threading TODO sections and
+made the assignment-scoped validation and error-handling changes described
+above. Untouched starter code is not represented as AI-generated.
+
+### Student review and verification
+
+The student explained in their own words:
+
+- Why freeing the per-thread data after a successful `pthread_create()` would
+  be unsafe and why the joiner frees it only after the worker finishes.
+- Why a mutex must be released after a later worker failure so other threads
+  are not blocked permanently.
+- How a mutex serializes two workers and makes the second wait while the first
+  owns it.
+- Why the caller must release its initial mutex lock before joining a worker,
+  otherwise the caller and worker deadlock waiting for each other.
+
+The review also corrected the distinction between the worker and joining
+thread, the undefined behavior of unlocking a mutex the worker did not acquire,
+and the requirement not to re-lock the shared mutex between worker joins.
+
+During the AI-assisted session, `./unit-test.sh` passed all four Assignment 4
+threading tests with zero failures. `threading.c` also compiled successfully
+with C11, POSIX interfaces, pthread support, and `-Wall -Wextra -Werror`.
+
+### External code and sources
+
+No external implementation code and no other student's assignment were used.
+Requirements and implementation structure came from the Assignment 4 Part 1
+instructions and the course-provided threading header and Unity tests.
+
+### Other student assignments
+
+No other student's assignment was used, supplied to the AI, or referenced when
+developing this submission.
+
 ## Assignment 3 Part 2 - Manual Kernel and Root Filesystem Build
 
 OpenAI Codex/ChatGPT was used as a collaborative programming assistant for
