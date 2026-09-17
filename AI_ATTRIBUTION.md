@@ -1,5 +1,59 @@
 # AI Assistance Attribution
 
+## Assignment 4 Part 2 - Buildroot Environment Bringup
+
+OpenAI Codex/ChatGPT was used as a collaborative programming assistant for
+Assignment 4 Part 2 on September 16, 2026.
+
+### Full chat history
+
+https://chatgpt.com/s/cx_6aab4ce579e88191872276dcf9a3ca97
+
+### AI-assisted files
+
+- `finder-app/finder-test.sh`
+- `AI_ATTRIBUTION.md`
+
+### Assistance provided
+
+AI assistance was used to update `finder-test.sh` for target-independent
+execution through `PATH`, read configuration from `/etc/finder-app/conf`, and
+save finder output to `/tmp/assignment4-result.txt`. AI assistance also created
+and configured the companion Buildroot repository, including its external
+tree, package definition, saved QEMU configuration, Buildroot submodule, and
+clean script.
+
+### Student review and verification
+
+The student explained in their own words:
+
+- Why current-working-directory-relative paths can fail when a script is
+  launched from another directory.
+- Why Buildroot must fetch committed source and use its target compiler.
+- Why target installation must be staged under `$(TARGET_DIR)` instead of the
+  host filesystem.
+- Why fail-fast behavior keeps the original failure clear.
+- Why production systems should use user-based access rather than exposing a
+  weak root login.
+- The overall Git fetch, cross-compilation, root-filesystem staging, QEMU boot,
+  finder test, and SSH transfer flow.
+
+The local finder test completed successfully from an unrelated working
+directory with the executables supplied through `PATH`. Full Buildroot image,
+QEMU, SSH, SCP, and GitHub Actions verification remained pending when this
+entry was written.
+
+### External code and sources
+
+No external implementation code and no other student's assignment were used.
+Requirements and starter files came from the course Assignment 4 Part 2
+instructions, `buildroot-assignments-base`, Buildroot 2024.02.13, and the
+course-provided assignment tests.
+
+### Other student assignments
+
+No other student's assignment was used, supplied to the AI, or referenced.
+
 ## Assignment 2 - File Operations and Cross Compiler
 
 OpenAI Codex/ChatGPT was used as a collaborative programming assistant for
