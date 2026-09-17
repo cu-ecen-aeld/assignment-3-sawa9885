@@ -39,9 +39,12 @@ The student explained in their own words:
   finder test, and SSH transfer flow.
 
 The local finder test completed successfully from an unrelated working
-directory with the executables supplied through `PATH`. Full Buildroot image,
-QEMU, SSH, SCP, and GitHub Actions verification remained pending when this
-entry was written.
+directory with the executables supplied through `PATH`. The Buildroot image
+completed successfully, booted under AArch64 QEMU, accepted an SSH login, ran
+`finder-test.sh` from `/root`, recorded writer output in `/var/log/messages`,
+and transferred `/tmp/assignment4-result.txt` using SCP. The course
+`full-test.sh` validation completed successfully. GitHub Actions verification
+remained pending when this entry was updated.
 
 ### External code and sources
 
