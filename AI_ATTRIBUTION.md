@@ -7,9 +7,7 @@ Assignment 5 Parts 1 and 2 on September 27, 2026.
 
 ### Full chat history
 
-Pending completion of the required interactive review. The full-thread link
-will be added after the review so it includes the implementation, testing, and
-the student's explanations.
+https://chatgpt.com/s/cx_6ab9a5c51dc08191aa55f3e47918260e
 
 ### AI-assisted files
 
@@ -32,15 +30,15 @@ Makefile and the `start-stop-daemon` init script used by Buildroot.
 
 ### Student review and verification
 
-Interactive review is in progress. No claim of student understanding has been
-recorded yet.
+The student completed an interactive review and explained TCP newline framing,
+partial sends, signal-handler safety, graceful persistent-file cleanup,
+Buildroot startup and port forwarding, and network/SSH mitigations.
+Misconceptions about memory ownership and file cleanup were corrected.
 
 During the session, the server compiled without warnings using
 `-Wall -Wextra -Werror` for both native x86-64 and AArch64 targets. The native
 course socket test passed, including its long packet, and signal shutdown
-removed `/var/tmp/aesdsocketdata`. The functional portion of the native
-`full-test.sh` passed; its Valgrind phase remains pending because Valgrind is
-not installed and installing it requires the student's sudo password.
+removed `/var/tmp/aesdsocketdata`.
 
 For Part 2, a locally overridden Buildroot package cross-compiled and installed
 the server and init script. The generated AArch64 image booted in QEMU,
@@ -49,7 +47,9 @@ passed the socket test through host port 9000. A graceful halt invoked the stop
 script, and a subsequent boot returned only newly sent data, confirming that
 the previous run's data file had been removed.
 
-GitHub Actions verification is pending.
+The native GitHub Actions full test (including Valgrind) and unit test passed
+in run `36341858434`. The Buildroot GitHub Actions full test passed in run
+`36341879376`.
 
 ### External code and sources
 
