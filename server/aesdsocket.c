@@ -2,7 +2,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #include <signal.h>
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -12,11 +14,29 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <syslog.h>
+#include <time.h>
 #include <unistd.h>
 
 #define SERVER_PORT 9000
 #define RECEIVE_SIZE 1024
 #define DATA_FILE "/var/tmp/aesdsocketdata"
+#define TIMESTAMP_INTERVAL_SECONDS 10
+
+struct thread_data {
+    pthread_t thread;
+    int client_fd;
+    char client_ip[INET_ADDRSTRLEN];
+    pthread_mutex_t *file_mutex;
+    atomic_bool complete;
+    struct thread_data *next;
+};
+
+struct timer_data {
+    pthread_mutex_t state_mutex;
+    pthread_cond_t state_changed;
+    pthread_mutex_t *file_mutex;
+    bool stop;
+};
 
 static volatile sig_atomic_t signal_caught;
 
@@ -79,7 +99,7 @@ static bool send_all(int fd, const char *buffer, size_t length)
     return true;
 }
 
-static bool append_packet(const char *packet, size_t length)
+static bool append_data(const char *data, size_t length)
 {
     int fd = open(DATA_FILE, O_WRONLY | O_CREAT | O_APPEND, 0644);
     bool success;
@@ -88,7 +108,7 @@ static bool append_packet(const char *packet, size_t length)
         syslog(LOG_ERR, "Unable to open %s: %s", DATA_FILE, strerror(errno));
         return false;
     }
-    success = write_all(fd, packet, length);
+    success = write_all(fd, data, length);
     if (!success) {
         syslog(LOG_ERR, "Unable to append to %s: %s", DATA_FILE,
                strerror(errno));
@@ -157,8 +177,29 @@ static bool grow_packet(char **packet, size_t *capacity, size_t required)
     return true;
 }
 
-static void handle_client(int client_fd)
+static bool process_packet(struct thread_data *data, const char *packet,
+                           size_t length)
 {
+    bool success;
+
+    if (pthread_mutex_lock(data->file_mutex) != 0) {
+        syslog(LOG_ERR, "Unable to lock data-file mutex");
+        return false;
+    }
+    success = append_data(packet, length);
+    if (success) {
+        success = send_file(data->client_fd);
+    }
+    if (pthread_mutex_unlock(data->file_mutex) != 0) {
+        syslog(LOG_ERR, "Unable to unlock data-file mutex");
+        success = false;
+    }
+    return success;
+}
+
+static void *handle_client(void *argument)
+{
+    struct thread_data *data = argument;
     char receive_buffer[RECEIVE_SIZE];
     char *packet = NULL;
     size_t packet_length = 0;
@@ -166,7 +207,7 @@ static void handle_client(int client_fd)
     bool keep_receiving = true;
 
     while (keep_receiving && !signal_caught) {
-        ssize_t received = recv(client_fd, receive_buffer,
+        ssize_t received = recv(data->client_fd, receive_buffer,
                                 sizeof(receive_buffer), 0);
         if (received > 0) {
             size_t offset = 0;
@@ -191,10 +232,8 @@ static void handle_client(int client_fd)
                 offset += chunk_length;
 
                 if (newline != NULL) {
-                    if (!append_packet(packet, packet_length) ||
-                        !send_file(client_fd)) {
-                        keep_receiving = false;
-                    }
+                    keep_receiving = process_packet(data, packet,
+                                                    packet_length);
                     packet_length = 0;
                 }
             }
@@ -202,13 +241,114 @@ static void handle_client(int client_fd)
             break;
         } else if ((errno != EINTR) || signal_caught) {
             if (!signal_caught) {
-                syslog(LOG_ERR, "Receive failed: %s", strerror(errno));
+                syslog(LOG_ERR, "Receive failed from %s: %s", data->client_ip,
+                       strerror(errno));
             }
             break;
         }
     }
 
     free(packet);
+    syslog(LOG_INFO, "Closed connection from %s", data->client_ip);
+    atomic_store(&data->complete, true);
+    return NULL;
+}
+
+static bool append_timestamp(pthread_mutex_t *file_mutex)
+{
+    char timestamp[128];
+    time_t current_time = time(NULL);
+    struct tm local_time;
+    bool success = false;
+    size_t length;
+
+    if ((current_time == (time_t)-1) ||
+        (localtime_r(&current_time, &local_time) == NULL)) {
+        syslog(LOG_ERR, "Unable to obtain local time");
+        return false;
+    }
+    length = strftime(timestamp, sizeof(timestamp),
+                      "timestamp:%a, %d %b %Y %T %z\n", &local_time);
+    if (length == 0) {
+        syslog(LOG_ERR, "Unable to format timestamp");
+        return false;
+    }
+
+    if (pthread_mutex_lock(file_mutex) != 0) {
+        syslog(LOG_ERR, "Unable to lock data-file mutex for timestamp");
+        return false;
+    }
+    success = append_data(timestamp, length);
+    if (pthread_mutex_unlock(file_mutex) != 0) {
+        syslog(LOG_ERR, "Unable to unlock data-file mutex after timestamp");
+        success = false;
+    }
+    return success;
+}
+
+static void *timestamp_worker(void *argument)
+{
+    struct timer_data *data = argument;
+
+    if (pthread_mutex_lock(&data->state_mutex) != 0) {
+        syslog(LOG_ERR, "Unable to lock timer state mutex");
+        return NULL;
+    }
+    while (!data->stop) {
+        struct timespec deadline;
+        int wait_result;
+
+        if (clock_gettime(CLOCK_REALTIME, &deadline) == -1) {
+            syslog(LOG_ERR, "Unable to read clock: %s", strerror(errno));
+            break;
+        }
+        deadline.tv_sec += TIMESTAMP_INTERVAL_SECONDS;
+        wait_result = pthread_cond_timedwait(&data->state_changed,
+                                             &data->state_mutex, &deadline);
+        if (data->stop) {
+            break;
+        }
+        if (wait_result == ETIMEDOUT) {
+            if (!append_timestamp(data->file_mutex)) {
+                syslog(LOG_ERR, "Unable to append periodic timestamp");
+            }
+        } else if (wait_result != 0) {
+            syslog(LOG_ERR, "Timer wait failed: %s", strerror(wait_result));
+            break;
+        }
+    }
+    if (pthread_mutex_unlock(&data->state_mutex) != 0) {
+        syslog(LOG_ERR, "Unable to unlock timer state mutex");
+    }
+    return NULL;
+}
+
+static int create_thread_with_signals_blocked(pthread_t *thread,
+                                              void *(*worker)(void *),
+                                              void *argument)
+{
+    sigset_t blocked_signals;
+    sigset_t previous_mask;
+    int result;
+
+    if ((sigemptyset(&blocked_signals) == -1) ||
+        (sigaddset(&blocked_signals, SIGINT) == -1) ||
+        (sigaddset(&blocked_signals, SIGTERM) == -1)) {
+        return errno;
+    }
+    result = pthread_sigmask(SIG_BLOCK, &blocked_signals, &previous_mask);
+    if (result != 0) {
+        return result;
+    }
+    result = pthread_create(thread, NULL, worker, argument);
+    {
+        int restore_result = pthread_sigmask(SIG_SETMASK, &previous_mask, NULL);
+        if (restore_result != 0) {
+            syslog(LOG_ERR, "Unable to restore signal mask: %s",
+                   strerror(restore_result));
+        }
+    }
+    return result;
 }
 
 static int create_server_socket(void)
@@ -287,11 +427,54 @@ static int become_daemon(void)
     return 0;
 }
 
+static void reap_completed_threads(struct thread_data **head)
+{
+    struct thread_data **current = head;
+
+    while (*current != NULL) {
+        struct thread_data *data = *current;
+        if (atomic_load(&data->complete)) {
+            *current = data->next;
+            (void)pthread_join(data->thread, NULL);
+            (void)close(data->client_fd);
+            free(data);
+        } else {
+            current = &data->next;
+        }
+    }
+}
+
+static void stop_and_join_threads(struct thread_data *head)
+{
+    struct thread_data *current;
+
+    for (current = head; current != NULL; current = current->next) {
+        (void)shutdown(current->client_fd, SHUT_RDWR);
+    }
+    while (head != NULL) {
+        struct thread_data *next = head->next;
+        (void)pthread_join(head->thread, NULL);
+        (void)close(head->client_fd);
+        free(head);
+        head = next;
+    }
+}
+
 int main(int argc, char *argv[])
 {
     bool daemon_mode = false;
     int server_fd;
     int exit_status = EXIT_SUCCESS;
+    pthread_mutex_t file_mutex = PTHREAD_MUTEX_INITIALIZER;
+    struct timer_data timer = {
+        .state_mutex = PTHREAD_MUTEX_INITIALIZER,
+        .state_changed = PTHREAD_COND_INITIALIZER,
+        .file_mutex = &file_mutex,
+        .stop = false,
+    };
+    pthread_t timer_thread;
+    bool timer_started = false;
+    struct thread_data *threads = NULL;
 
     if (argc == 2 && strcmp(argv[1], "-d") == 0) {
         daemon_mode = true;
@@ -323,34 +506,60 @@ int main(int argc, char *argv[])
         }
     }
 
+    if (create_thread_with_signals_blocked(&timer_thread, timestamp_worker,
+                                           &timer) != 0) {
+        syslog(LOG_ERR, "Unable to create timestamp thread");
+        exit_status = -1;
+        signal_caught = 1;
+    } else {
+        timer_started = true;
+    }
+
     while (!signal_caught) {
         struct sockaddr_in client_address;
         socklen_t client_length = sizeof(client_address);
-        char client_ip[INET_ADDRSTRLEN] = "unknown";
+        struct thread_data *data;
         int client_fd = accept(server_fd, (struct sockaddr *)&client_address,
                                &client_length);
 
         if (client_fd == -1) {
-            if ((errno == EINTR) && signal_caught) {
-                break;
+            if (errno == EINTR) {
+                continue;
             }
             syslog(LOG_ERR, "Accept failed: %s", strerror(errno));
             exit_status = -1;
             break;
         }
 
-        if (inet_ntop(AF_INET, &client_address.sin_addr, client_ip,
-                      sizeof(client_ip)) == NULL) {
-            strncpy(client_ip, "unknown", sizeof(client_ip));
-            client_ip[sizeof(client_ip) - 1] = '\0';
-        }
-        syslog(LOG_INFO, "Accepted connection from %s", client_ip);
-        handle_client(client_fd);
-        if (close(client_fd) == -1) {
-            syslog(LOG_ERR, "Unable to close client socket: %s",
+        data = calloc(1, sizeof(*data));
+        if (data == NULL) {
+            syslog(LOG_ERR, "Unable to allocate thread data: %s",
                    strerror(errno));
+            close(client_fd);
+            exit_status = -1;
+            break;
         }
-        syslog(LOG_INFO, "Closed connection from %s", client_ip);
+        data->client_fd = client_fd;
+        data->file_mutex = &file_mutex;
+        atomic_init(&data->complete, false);
+        if (inet_ntop(AF_INET, &client_address.sin_addr, data->client_ip,
+                      sizeof(data->client_ip)) == NULL) {
+            strcpy(data->client_ip, "unknown");
+        }
+        syslog(LOG_INFO, "Accepted connection from %s", data->client_ip);
+
+        if (create_thread_with_signals_blocked(&data->thread, handle_client,
+                                               data) != 0) {
+            syslog(LOG_ERR, "Unable to create client thread for %s",
+                   data->client_ip);
+            close(client_fd);
+            free(data);
+            exit_status = -1;
+            break;
+        }
+        data->next = threads;
+        threads = data;
+        reap_completed_threads(&threads);
     }
 
     if (signal_caught) {
@@ -360,11 +569,25 @@ int main(int argc, char *argv[])
         syslog(LOG_ERR, "Unable to close server socket: %s", strerror(errno));
         exit_status = -1;
     }
+    stop_and_join_threads(threads);
+
+    if (timer_started) {
+        if (pthread_mutex_lock(&timer.state_mutex) == 0) {
+            timer.stop = true;
+            (void)pthread_cond_signal(&timer.state_changed);
+            (void)pthread_mutex_unlock(&timer.state_mutex);
+        }
+        (void)pthread_join(timer_thread, NULL);
+    }
+
     if ((unlink(DATA_FILE) == -1) && (errno != ENOENT)) {
         syslog(LOG_ERR, "Unable to remove %s: %s", DATA_FILE,
                strerror(errno));
         exit_status = -1;
     }
+    (void)pthread_cond_destroy(&timer.state_changed);
+    (void)pthread_mutex_destroy(&timer.state_mutex);
+    (void)pthread_mutex_destroy(&file_mutex);
     closelog();
     return exit_status;
 }
