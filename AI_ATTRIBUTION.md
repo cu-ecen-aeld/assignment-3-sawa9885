@@ -1,5 +1,59 @@
 # AI Assistance Attribution
 
+## Assignment 7 Parts 1 and 2 - Circular Buffer and Kernel Modules
+
+OpenAI Codex/ChatGPT was used as a collaborative programming assistant for
+Assignment 7 Parts 1 and 2 on October 8-9, 2026.
+
+### Full chat history
+
+https://chatgpt.com/s/cx_6ac93e63e5f081919b89f40a3ba75ff9
+
+### AI-assisted files
+
+- `aesd-char-driver/aesd-circular-buffer.c`
+- `assignments/assignment7/faulty-oops.md`
+- `AI_ATTRIBUTION.md`
+
+The remaining Assignment 7 files added or changed by the
+`assignments-base/assignment7` merge are course starter code.
+
+### Assistance provided
+
+AI assistance merged the course Assignment 7 starter without committing,
+implemented circular-buffer insertion, overwrite, wraparound, logical-offset
+lookup, initialization-compatible state handling, and defensive null checks,
+and drafted the kernel-oops analysis from the observed AArch64 QEMU trace.
+AI assistance also integrated and validated the related Buildroot and `ldd3`
+work in the student's Assignment 5 and Assignment 7 repositories.
+
+### Student review and verification
+
+The student completed an interactive review and explained why wrapped lookup
+starts at `out_offs`, why the `full` flag distinguishes full and empty states,
+why entry allocation ownership remains with the caller, how major and minor
+device numbers route a `/dev` node to a loaded driver, why startup must not
+guess a missing major number, and how the oops fields identify a null-pointer
+write while a surviving login prompt does not establish kernel integrity.
+
+The Assignment 3 `unit-test.sh` and `full-test.sh` both passed. The related
+Buildroot image cross-compiled the modules, booted in AArch64 QEMU, loaded the
+modules automatically, created the expected device nodes, logged the GitHub
+username, unloaded and restarted cleanly, reproduced the expected oops, and
+passed the course Assignment 7 Buildroot validation locally. GitHub Actions
+verification is recorded after the pushed workflows complete.
+
+### External code and sources
+
+No external implementation code and no other student's assignment were used.
+Requirements and starter code came from the supplied Assignment 7
+instructions, the course `aesd-assignments`, `buildroot-assignments-base`, and
+`ldd3` repositories, course tests, and upstream Buildroot documentation.
+
+### Other student assignments
+
+No other student's assignment was used, supplied to the AI, or referenced.
+
 ## Assignment 5 Parts 1 and 2 - Socket Server and Buildroot Integration
 
 OpenAI Codex/ChatGPT was used as a collaborative programming assistant for
