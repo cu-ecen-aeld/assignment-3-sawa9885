@@ -40,8 +40,9 @@ The Assignment 3 `unit-test.sh` and `full-test.sh` both passed. The related
 Buildroot image cross-compiled the modules, booted in AArch64 QEMU, loaded the
 modules automatically, created the expected device nodes, logged the GitHub
 username, unloaded and restarted cleanly, reproduced the expected oops, and
-passed the course Assignment 7 Buildroot validation locally. GitHub Actions
-verification is recorded after the pushed workflows complete.
+passed the course Assignment 7 Buildroot validation locally. The Assignment 3
+GitHub Actions unit and full tests passed in run `37979798074`, and the
+Assignment 5 Buildroot GitHub Actions full test passed in run `37979774999`.
 
 ### External code and sources
 
