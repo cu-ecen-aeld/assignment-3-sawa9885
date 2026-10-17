@@ -1,5 +1,70 @@
 # AI Assistance Attribution
 
+## Assignment 8 - Character Driver and Socket Integration
+
+OpenAI Codex/ChatGPT was used as a collaborative programming assistant for
+Assignment 8 on October 17, 2026.
+
+### Full chat history
+
+https://chatgpt.com/s/cx_6ad400f57728819180d4f6450bf29492
+
+### AI-assisted files
+
+- `aesd-char-driver/aesdchar.h`
+- `aesd-char-driver/aesdchar_load`
+- `aesd-char-driver/main.c`
+- `server/Makefile`
+- `server/aesdsocket.c`
+- `AI_ATTRIBUTION.md`
+
+The remaining Assignment 8 driver files and assignment-selection change were
+course starter code merged from `assignments-base/assignment8`.
+
+### Assistance provided
+
+AI assistance merged the course Assignment 8 starter without overwriting prior
+work and implemented the character driver's open, read, write, initialization,
+and cleanup paths. This included newline-delimited pending-write assembly,
+support for multiple completed commands in one write, ten-entry circular-buffer
+eviction, read-offset handling, kernel/user copying, allocation cleanup, and
+mutex protection. AI assistance also added the default-on
+`USE_AESD_CHAR_DEVICE` build switch to the socket server, redirected operations
+to `/dev/aesdchar`, disabled timestamps and endpoint deletion in device mode,
+and preserved delayed open/close behavior for module unloading.
+
+### Student review and verification
+
+The student completed an interactive review and explained that newline
+termination moves finalized commands from pending storage into the circular
+buffer, unfinished data must stay separate, a full buffer discards and frees
+its oldest allocation, and the mutex must protect the complete pending-data
+replacement and buffer-update transition. The review also covered logical
+read offsets, memory ownership and double-free/leak risks, atomic socket
+write-and-read responses, error handling, limits of sequential tests, and the
+security implications of a world-writable device node. A read-offset
+misconception was corrected during the review.
+
+The socket server compiled with `-Wall -Wextra -Werror` in both character-device
+and legacy-file modes. The driver cross-compiled against the Buildroot AArch64
+kernel. The Assignment 8 Buildroot validation booted QEMU, automatically
+loaded the driver and server, successfully unloaded/reloaded the driver, and
+passed both the course `drivertest.sh` and `sockettest.sh` scripts. A clean
+source-pinned build and GitHub Actions verification are recorded separately
+after submission integration.
+
+### External code and sources
+
+No external implementation code and no other student's assignment were used.
+Requirements, starter files, and tests came from the supplied Assignment 8
+instructions, the course `aesd-assignments` and
+`buildroot-assignments-base` repositories, and the course-provided
+`assignment-autotest` scripts.
+
+### Other student assignments
+
+No other student's assignment was used, supplied to the AI, or referenced.
+
 ## Assignment 7 Parts 1 and 2 - Circular Buffer and Kernel Modules
 
 OpenAI Codex/ChatGPT was used as a collaborative programming assistant for
