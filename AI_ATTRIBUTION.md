@@ -50,8 +50,9 @@ and legacy-file modes. The driver cross-compiled against the Buildroot AArch64
 kernel. The Assignment 8 Buildroot validation booted QEMU, automatically
 loaded the driver and server, successfully unloaded/reloaded the driver, and
 passed both the course `drivertest.sh` and `sockettest.sh` scripts. A clean
-source-pinned build and GitHub Actions verification are recorded separately
-after submission integration.
+source-pinned build passed the same QEMU validations. The native repository's
+GitHub Actions unit and full tests passed in run `39078227688`, and the
+Buildroot repository's full test passed in run `39081095603` (attempt 7).
 
 ### External code and sources
 
