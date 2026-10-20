@@ -19,8 +19,15 @@
 
 #define SERVER_PORT 9000
 #define RECEIVE_SIZE 1024
+#ifndef USE_AESD_CHAR_DEVICE
+#define USE_AESD_CHAR_DEVICE 1
+#endif
+#if USE_AESD_CHAR_DEVICE
+#define DATA_FILE "/dev/aesdchar"
+#else
 #define DATA_FILE "/var/tmp/aesdsocketdata"
 #define TIMESTAMP_INTERVAL_SECONDS 10
+#endif
 
 struct thread_data {
     pthread_t thread;
@@ -31,12 +38,14 @@ struct thread_data {
     struct thread_data *next;
 };
 
+#if !USE_AESD_CHAR_DEVICE
 struct timer_data {
     pthread_mutex_t state_mutex;
     pthread_cond_t state_changed;
     pthread_mutex_t *file_mutex;
     bool stop;
 };
+#endif
 
 static volatile sig_atomic_t signal_caught;
 
@@ -101,7 +110,11 @@ static bool send_all(int fd, const char *buffer, size_t length)
 
 static bool append_data(const char *data, size_t length)
 {
+#if USE_AESD_CHAR_DEVICE
+    int fd = open(DATA_FILE, O_WRONLY);
+#else
     int fd = open(DATA_FILE, O_WRONLY | O_CREAT | O_APPEND, 0644);
+#endif
     bool success;
 
     if (fd == -1) {
@@ -254,6 +267,7 @@ static void *handle_client(void *argument)
     return NULL;
 }
 
+#if !USE_AESD_CHAR_DEVICE
 static bool append_timestamp(pthread_mutex_t *file_mutex)
 {
     char timestamp[128];
@@ -285,7 +299,6 @@ static bool append_timestamp(pthread_mutex_t *file_mutex)
     }
     return success;
 }
-
 static void *timestamp_worker(void *argument)
 {
     struct timer_data *data = argument;
@@ -322,6 +335,7 @@ static void *timestamp_worker(void *argument)
     }
     return NULL;
 }
+#endif
 
 static int create_thread_with_signals_blocked(pthread_t *thread,
                                               void *(*worker)(void *),
@@ -466,6 +480,7 @@ int main(int argc, char *argv[])
     int server_fd;
     int exit_status = EXIT_SUCCESS;
     pthread_mutex_t file_mutex = PTHREAD_MUTEX_INITIALIZER;
+#if !USE_AESD_CHAR_DEVICE
     struct timer_data timer = {
         .state_mutex = PTHREAD_MUTEX_INITIALIZER,
         .state_changed = PTHREAD_COND_INITIALIZER,
@@ -474,6 +489,7 @@ int main(int argc, char *argv[])
     };
     pthread_t timer_thread;
     bool timer_started = false;
+#endif
     struct thread_data *threads = NULL;
 
     if (argc == 2 && strcmp(argv[1], "-d") == 0) {
@@ -506,6 +522,7 @@ int main(int argc, char *argv[])
         }
     }
 
+#if !USE_AESD_CHAR_DEVICE
     if (create_thread_with_signals_blocked(&timer_thread, timestamp_worker,
                                            &timer) != 0) {
         syslog(LOG_ERR, "Unable to create timestamp thread");
@@ -514,6 +531,7 @@ int main(int argc, char *argv[])
     } else {
         timer_started = true;
     }
+#endif
 
     while (!signal_caught) {
         struct sockaddr_in client_address;
@@ -571,6 +589,7 @@ int main(int argc, char *argv[])
     }
     stop_and_join_threads(threads);
 
+#if !USE_AESD_CHAR_DEVICE
     if (timer_started) {
         if (pthread_mutex_lock(&timer.state_mutex) == 0) {
             timer.stop = true;
@@ -587,6 +606,7 @@ int main(int argc, char *argv[])
     }
     (void)pthread_cond_destroy(&timer.state_changed);
     (void)pthread_mutex_destroy(&timer.state_mutex);
+#endif
     (void)pthread_mutex_destroy(&file_mutex);
     closelog();
     return exit_status;
