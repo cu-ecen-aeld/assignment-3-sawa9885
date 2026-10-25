@@ -50,7 +50,8 @@ validation. The Buildroot validator unloaded/reloaded the module, passed the
 driver seek/ioctl checks, and passed socket ioctl checks for command/offset
 pairs `0,2` and `8,6`. One initial socket validation encountered an empty first
 response; the unchanged image then passed both a manual socket probe and a
-complete rerun. GitHub Actions verification is pending.
+complete rerun. The native GitHub Actions unit and full tests passed in run
+`40215561580`.
 
 ### External code and sources
 
