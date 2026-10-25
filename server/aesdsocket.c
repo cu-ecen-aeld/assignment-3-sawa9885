@@ -13,6 +13,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/ioctl.h>
 #include <syslog.h>
 #include <time.h>
 #include <unistd.h>
@@ -24,6 +25,7 @@
 #endif
 #if USE_AESD_CHAR_DEVICE
 #define DATA_FILE "/dev/aesdchar"
+#include "../aesd-char-driver/aesd_ioctl.h"
 #else
 #define DATA_FILE "/var/tmp/aesdsocketdata"
 #define TIMESTAMP_INTERVAL_SECONDS 10
@@ -108,13 +110,10 @@ static bool send_all(int fd, const char *buffer, size_t length)
     return true;
 }
 
+#if !USE_AESD_CHAR_DEVICE
 static bool append_data(const char *data, size_t length)
 {
-#if USE_AESD_CHAR_DEVICE
-    int fd = open(DATA_FILE, O_WRONLY);
-#else
     int fd = open(DATA_FILE, O_WRONLY | O_CREAT | O_APPEND, 0644);
-#endif
     bool success;
 
     if (fd == -1) {
@@ -165,6 +164,99 @@ static bool send_file(int client_fd)
     }
     return success;
 }
+#endif
+
+#if USE_AESD_CHAR_DEVICE
+static bool parse_seek_command(const char *packet, size_t length,
+                               struct aesd_seekto *seekto)
+{
+    static const char prefix[] = "AESDCHAR_IOCSEEKTO:";
+    size_t position = sizeof(prefix) - 1;
+    uint32_t values[2] = {0, 0};
+    size_t value_index;
+
+    if (length <= position || memcmp(packet, prefix, position) != 0) {
+        return false;
+    }
+    for (value_index = 0; value_index < 2; value_index++) {
+        bool has_digit = false;
+
+        while (position < length && packet[position] >= '0' &&
+               packet[position] <= '9') {
+            uint32_t digit = (uint32_t)(packet[position] - '0');
+
+            if (values[value_index] > (UINT32_MAX - digit) / 10) {
+                return false;
+            }
+            values[value_index] = values[value_index] * 10 + digit;
+            has_digit = true;
+            position++;
+        }
+        if (!has_digit) {
+            return false;
+        }
+        if (value_index == 0) {
+            if (position >= length || packet[position] != ',') {
+                return false;
+            }
+            position++;
+        }
+    }
+    if (position + 1 != length || packet[position] != '\n') {
+        return false;
+    }
+    seekto->write_cmd = values[0];
+    seekto->write_cmd_offset = values[1];
+    return true;
+}
+
+static bool process_device_packet(int client_fd, const char *packet,
+                                  size_t length)
+{
+    struct aesd_seekto seekto;
+    bool is_seek = parse_seek_command(packet, length, &seekto);
+    char buffer[RECEIVE_SIZE];
+    bool success = true;
+    int fd = open(DATA_FILE, O_RDWR);
+
+    if (fd == -1) {
+        syslog(LOG_ERR, "Unable to open %s: %s", DATA_FILE, strerror(errno));
+        return false;
+    }
+    if (is_seek) {
+        if (ioctl(fd, AESDCHAR_IOCSEEKTO, &seekto) == -1) {
+            syslog(LOG_ERR, "Unable to seek %s: %s", DATA_FILE,
+                   strerror(errno));
+            success = false;
+        }
+    } else if (!write_all(fd, packet, length)) {
+        syslog(LOG_ERR, "Unable to append to %s: %s", DATA_FILE,
+               strerror(errno));
+        success = false;
+    }
+
+    while (success) {
+        ssize_t bytes_read = read(fd, buffer, sizeof(buffer));
+
+        if (bytes_read > 0) {
+            success = send_all(client_fd, buffer, (size_t)bytes_read);
+        } else if (bytes_read == 0) {
+            break;
+        } else if (errno != EINTR) {
+            syslog(LOG_ERR, "Unable to read %s: %s", DATA_FILE,
+                   strerror(errno));
+            success = false;
+        } else if (signal_caught) {
+            success = false;
+        }
+    }
+    if (close(fd) == -1) {
+        syslog(LOG_ERR, "Unable to close %s: %s", DATA_FILE, strerror(errno));
+        success = false;
+    }
+    return success;
+}
+#endif
 
 static bool grow_packet(char **packet, size_t *capacity, size_t required)
 {
@@ -199,10 +291,14 @@ static bool process_packet(struct thread_data *data, const char *packet,
         syslog(LOG_ERR, "Unable to lock data-file mutex");
         return false;
     }
+#if USE_AESD_CHAR_DEVICE
+    success = process_device_packet(data->client_fd, packet, length);
+#else
     success = append_data(packet, length);
     if (success) {
         success = send_file(data->client_fd);
     }
+#endif
     if (pthread_mutex_unlock(data->file_mutex) != 0) {
         syslog(LOG_ERR, "Unable to unlock data-file mutex");
         success = false;

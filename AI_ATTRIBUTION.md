@@ -1,5 +1,68 @@
 # AI Assistance Attribution
 
+## Assignment 9 - Advanced Character Driver Operations
+
+OpenAI Codex/ChatGPT was used as a collaborative programming assistant for
+Assignment 9 on October 24, 2026.
+
+### Full chat history
+
+https://chatgpt.com/s/cx_6ade38aba64c81918481b2043121106c
+
+### AI-assisted files
+
+- `aesd-char-driver/main.c`
+- `server/aesdsocket.c`
+- `AI_ATTRIBUTION.md`
+
+The new `aesd-char-driver/aesd_ioctl.h` file and both repositories'
+`conf/assignment.txt` changes are course starter material merged from the
+official Assignment 9 branches.
+
+### Assistance provided
+
+AI assistance merged the official Assignment 9 starter changes without
+committing, implemented mutex-protected `llseek` support for `SEEK_SET`,
+`SEEK_CUR`, and `SEEK_END`, and implemented `AESDCHAR_IOCSEEKTO` translation
+from logical command/byte offsets into the circular buffer's aggregate file
+position. AI assistance also added strict socket-command parsing and used one
+request-scoped character-device descriptor for each write-or-ioctl followed by
+its response read, preserving ioctl offsets while allowing module unloads
+between requests.
+
+### Student review and verification
+
+The student completed an interactive review and explained that wrapped logical
+command zero starts at `out_offs`; holding the device mutex prevents eviction
+from invalidating the position calculation; and reopening the character device
+after ioctl would lose the selected per-file position. The student also
+explained why the server mutex must cover both the operation and response read,
+why a command-relative offset equal to the command size is invalid even though
+aggregate EOF is a legal `llseek` position, how unchecked indexes could expose
+or crash kernel memory, how descriptor closure permits module unload, and why
+sequential tests do not establish concurrency correctness.
+
+Local verification included strict native compilation of the socket server in
+both character-device and legacy-file modes, native unit and full tests,
+AArch64 kernel-module cross-compilation, a local-source Buildroot image build,
+manual QEMU device and socket probes, and the complete Assignment 9 Buildroot
+validation. The Buildroot validator unloaded/reloaded the module, passed the
+driver seek/ioctl checks, and passed socket ioctl checks for command/offset
+pairs `0,2` and `8,6`. One initial socket validation encountered an empty first
+response; the unchanged image then passed both a manual socket probe and a
+complete rerun. GitHub Actions verification is pending.
+
+### External code and sources
+
+No external implementation code and no other student's assignment were used.
+Requirements, starter files, and tests came from the supplied Assignment 9
+instructions, the course `aesd-assignments` and `buildroot-assignments-base`
+repositories, and the course-provided `assignment-autotest` scripts.
+
+### Other student assignments
+
+No other student's assignment was used, supplied to the AI, or referenced.
+
 ## Assignment 8 - Character Driver and Socket Integration
 
 OpenAI Codex/ChatGPT was used as a collaborative programming assistant for
